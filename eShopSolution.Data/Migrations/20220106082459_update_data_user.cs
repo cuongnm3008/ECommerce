@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace eShopSolution.Data.Migrations
 {
-    public partial class update_data_user : Migration
+    public partial class Update_data_user : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
