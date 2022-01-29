@@ -2,11 +2,14 @@ using eShopSolution.AppService.Catalog.Products;
 using eShopSolution.AppService.Catalog.Products.Implement;
 using eShopSolution.AppService.Common;
 using eShopSolution.AppService.Common.Impletment;
+using eShopSolution.AppService.System.Users;
 using eShopSolution.Data.EF;
+using eShopSolution.Data.Entities;
 using eShopSolution.Utilities.Constants;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,10 +37,19 @@ namespace eShopSolution.BackendApi
             services.AddDbContext<EShopDbContext>(options =>
             options.UseSqlServer(Configuration.GetConnectionString(SystemConstants.MainConnectionString)));
 
-            //Declare DI 
+            services.AddIdentity<AppUser, AppRole>()
+              .AddEntityFrameworkStores<EShopDbContext>()
+              .AddDefaultTokenProviders();
+
+            //Declare DI
             services.AddTransient<IPublicProductService, PublicProductService>();
             services.AddTransient<IManageProductService, ManageProductService>();
             services.AddTransient<IStorageService, FileStorageService>();
+            services.AddTransient<UserManager<AppUser>, UserManager<AppUser>>();
+            services.AddTransient<SignInManager<AppUser>, SignInManager<AppUser>>();
+            services.AddTransient<RoleManager<AppRole>, RoleManager<AppRole>>();
+            services.AddTransient<IUserService, UserService>();
+
             services.AddSwaggerGen(options =>
             {
                 options.SwaggerDoc("v1", new OpenApiInfo
@@ -81,7 +93,6 @@ namespace eShopSolution.BackendApi
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
             });
-
-             }
+        }
     }
 }
