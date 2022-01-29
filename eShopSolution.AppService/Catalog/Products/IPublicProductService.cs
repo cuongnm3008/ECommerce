@@ -11,8 +11,8 @@ namespace eShopSolution.AppService.Catalog.Products
     
     public interface IPublicProductService
     {
-       Task<PagedResult<ProductViewModel>> GetAllByCategoryId(GetPublicProductPagingRequest request);
+       Task<PagedResult<ProductViewModel>> GetAllByCategoryId(string languageId, GetPublicProductPagingRequest request);
        
-       Task<List<ProductViewModel>> GetAll();
+       Task<List<ProductViewModel>> GetAll(string languageId);
     }
 }
