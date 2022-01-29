@@ -20,12 +20,13 @@ namespace eShopSolution.AppService.Catalog.Products.Implement
         }
 
         // get product filter by category when user choose catecory ID 
-        public async Task<PagedResult<ProductViewModel>> GetAllByCategoryId(GetPublicProductPagingRequest request)
+        public async Task<PagedResult<ProductViewModel>> GetAllByCategoryId(string languageId, GetPublicProductPagingRequest request)
         {
             var query = from p in _dbcontext.Products
                         join pt in _dbcontext.ProductTranslations on p.Id equals pt.ProductId
                         join pic in _dbcontext.ProductInCategories on p.Id equals pic.ProductId
                         join c in _dbcontext.Categories on pic.CategoryId equals c.Id
+                        where pt.LanguageId == languageId
                         select new { p, pt, pic };
             // 2. Filter
             if (request.CategoryId.HasValue && request.CategoryId.Value > 0)
@@ -64,12 +65,13 @@ namespace eShopSolution.AppService.Catalog.Products.Implement
             return pageResult;
         }
 
-        public async Task<List<ProductViewModel>> GetAll()
+        public async Task<List<ProductViewModel>> GetAll(string languageId)
         {
             var query = from p in _dbcontext.Products
                         join pt in _dbcontext.ProductTranslations on p.Id equals pt.ProductId
                         join pic in _dbcontext.ProductInCategories on p.Id equals pic.ProductId
                         join c in _dbcontext.Categories on pic.CategoryId equals c.Id
+                        where pt.LanguageId == languageId
                         select new { p, pt, pic };
 
             var data = await query.Select(x => new ProductViewModel()
