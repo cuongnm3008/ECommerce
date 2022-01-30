@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace eShopSolution.ViewModel.System
+namespace eShopSolution.ViewModel.System.Users
 {
     public class LoginRequestValidator : AbstractValidator<LoginRequest>
     {
