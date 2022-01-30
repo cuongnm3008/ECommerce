@@ -17,12 +17,12 @@ using eShopSolution.ViewModel.Catalog.ProductImages;
 
 namespace eShopSolution.AppService.Catalog.Products.Implement
 {
-    public class ManageProductService : IManageProductService
+    public class ProductService : IProductService
     {
         private readonly EShopDbContext _dbcontext;
         private readonly IStorageService _storageService;
 
-        public ManageProductService(EShopDbContext dbcontext, IStorageService storageService)
+        public ProductService(EShopDbContext dbcontext, IStorageService storageService)
         {
             _dbcontext = dbcontext;
             _storageService = storageService;
@@ -31,7 +31,8 @@ namespace eShopSolution.AppService.Catalog.Products.Implement
         /*
              Service for image of product
          */
-        #region 
+        #region
+
         public async Task AddViewCount(int productId)
         {
             var product = await _dbcontext.Products.FindAsync(productId);
@@ -91,17 +92,90 @@ namespace eShopSolution.AppService.Catalog.Products.Implement
             var images = _dbcontext.ProductImages.Where(i => i.ProductId == productId);
             foreach (var image in images)
             {
-                // xóa cả bản ghi trong db nữa 
+                // xóa cả bản ghi trong db nữa
                 await _storageService.DeleteFileAsync(image.ImagePath);
             }
             _dbcontext.Products.Remove(product);
             return await _dbcontext.SaveChangesAsync(); // return total record was delete
         }
 
+        // get product filter by category when user choose catecory ID
+        public async Task<PagedResult<ProductViewModel>> GetAllByCategoryId(string languageId, GetPublicProductPagingRequest request)
+        {
+            var query = from p in _dbcontext.Products
+                        join pt in _dbcontext.ProductTranslations on p.Id equals pt.ProductId
+                        join pic in _dbcontext.ProductInCategories on p.Id equals pic.ProductId
+                        join c in _dbcontext.Categories on pic.CategoryId equals c.Id
+                        where pt.LanguageId == languageId
+                        select new { p, pt, pic };
+            // 2. Filter
+            if (request.CategoryId.HasValue && request.CategoryId.Value > 0)
+            {
+                query = query.Where(p => p.pic.CategoryId == request.CategoryId);
+            }
+
+            //3. Paging
+            int totalRow = await query.CountAsync();
+
+            //This is agorithm paging
+            var data = query.Skip((request.PageIndex - 1) * request.PageSize).Take(request.PageSize)
+                .Select(x => new ProductViewModel()
+                {
+                    Id = x.p.Id,
+                    Name = x.pt.Name,
+                    DateCreated = x.p.DateCreated,
+                    Description = x.pt.Description,
+                    Details = x.pt.Details,
+                    LanguageId = x.pt.LanguageId,
+                    OriginalPrice = x.p.OriginalPrice,
+                    Price = x.p.Price,
+                    SeoAlias = x.pt.SeoAlias,
+                    SeoDescription = x.pt.SeoDescription,
+                    SeoTitle = x.pt.SeoTitle,
+                    Stock = x.p.Stock,
+                    ViewCount = x.p.ViewCount
+                }).ToListAsync();
+
+            //4. Select and projection
+            var pageResult = new PagedResult<ProductViewModel>()
+            {
+                TotalRecord = totalRow,
+                Items = await data
+            };
+            return pageResult;
+        }
+
+        public async Task<List<ProductViewModel>> GetAll(string languageId)
+        {
+            var query = from p in _dbcontext.Products
+                        join pt in _dbcontext.ProductTranslations on p.Id equals pt.ProductId
+                        join pic in _dbcontext.ProductInCategories on p.Id equals pic.ProductId
+                        join c in _dbcontext.Categories on pic.CategoryId equals c.Id
+                        where pt.LanguageId == languageId
+                        select new { p, pt, pic };
+
+            var data = await query.Select(x => new ProductViewModel()
+            {
+                Id = x.p.Id,
+                Name = x.pt.Name,
+                DateCreated = x.p.DateCreated,
+                Description = x.pt.Description,
+                Details = x.pt.Details,
+                LanguageId = x.pt.LanguageId,
+                OriginalPrice = x.p.OriginalPrice,
+                Price = x.p.Price,
+                SeoAlias = x.pt.SeoAlias,
+                SeoDescription = x.pt.SeoDescription,
+                SeoTitle = x.pt.SeoTitle,
+                Stock = x.p.Stock,
+                ViewCount = x.p.ViewCount
+            }).ToListAsync();
+            return data;
+        }
+
         // Get list product with to paging
         public async Task<PagedResult<ProductViewModel>> GetAllPaging(GetManageProductPagingRequest request)
         {
-
             // 1. Select join
             var query = from p in _dbcontext.Products
                         join pt in _dbcontext.ProductTranslations on p.Id equals pt.ProductId
@@ -172,8 +246,6 @@ namespace eShopSolution.AppService.Catalog.Products.Implement
             return productViewModel;
         }
 
-
-
         public async Task<int> Update(ProductUpdateRequest request)
         {
             var product = await _dbcontext.Products.FindAsync(request.Id);
@@ -206,8 +278,6 @@ namespace eShopSolution.AppService.Catalog.Products.Implement
             }
         }
 
-
-
         public async Task<bool> UpdatePrice(int productId, decimal newPrice)
         {
             var product = await _dbcontext.Products.FindAsync(productId);
@@ -236,7 +306,6 @@ namespace eShopSolution.AppService.Catalog.Products.Implement
             }
         }
 
-
         private async Task<string> SaveFile(IFormFile file)
         {
             var originalFileName = ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName.Trim('"');
@@ -251,6 +320,7 @@ namespace eShopSolution.AppService.Catalog.Products.Implement
             Service for image of product
         */
         #region
+
         public async Task<int> AddImage(int productId, ProductImageCreateRequest request)
         {
             var productImage = new ProductImage()
@@ -333,6 +403,5 @@ namespace eShopSolution.AppService.Catalog.Products.Implement
         }
 
         #endregion
-
     }
 }
